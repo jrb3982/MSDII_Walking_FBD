@@ -1,0 +1,11 @@
+#include "Common.h"
+void uart0_init(void);
+void uart0_putchar(char);
+BYTE uart0_getchar(void);
+void uart0_put(char*);
+void uart2_init(void);
+void uart2_putchar(char);
+BYTE uart2_getchar(void);
+void uart2_put(char*);
+BOOLEAN uart0_dataAvailable(void);
+BOOLEAN uart2_dataAvailable(void);
