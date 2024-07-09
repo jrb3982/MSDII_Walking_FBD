@@ -1,4 +1,7 @@
-
+/*
+* Author: Jackson Baker
+* Created on 7/05/2024
+*/
 #include "PID.h"
 #include "math.h"
 
@@ -23,7 +26,7 @@ float computePID(float intended_position, float actual_position) {
   prevError2 = errors[2];
     
   setPoint = KP * error +
-            // KI * (error + prevError1) * 0.5f +
+             KI * (error + prevError1) * 0.5f +
              KD * (error - 2.0f * prevError1 + prevError2);
   
   errors[2] = errors[1];
