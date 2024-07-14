@@ -42,7 +42,7 @@ void setup()
   
   lcd_1.begin(16, 2);
   
-  lcd_1.print("sensor value: ");
+  //lcd_1.print("sensor value: ");
 
 
  
@@ -144,9 +144,9 @@ void loop()
 void processSensorData(int number_leds_on){
   for (int i = 0; i < NUMPIXELS; i++){ //for each LED in the strip
     if (i < number_leds_on){ //if our current LED should be ON
-      if ( (i+1) <=  (NUMPIXELS/4)){ //if in the bottom quarter of LEDs, color BLUE
+      if ( (i+1) <  (NUMPIXELS/4)){ //if in the bottom quarter of LEDs, color BLUE
         pixels1.setPixelColor(i, pixels1.Color(0,0,255));
-      } else if ( (i+1) > (NUMPIXELS/4) && (i+1) <= (NUMPIXELS/2)) { // between bottom quarter and half, color GREEN
+      } else if ( (i+1) >= (NUMPIXELS/4) && (i+1) <= (NUMPIXELS/2)) { // between bottom quarter and half, color GREEN
         pixels1.setPixelColor(i, pixels1.Color(0,255,0));
       } else { //top 50% color red (we can change these percentages later
         pixels1.setPixelColor(i, pixels1.Color(255,00,0));
@@ -159,3 +159,4 @@ void processSensorData(int number_leds_on){
   	lcd_1.print("sensor: "); //display sensor reading
   	lcd_1.print(sensor);
 }
+
