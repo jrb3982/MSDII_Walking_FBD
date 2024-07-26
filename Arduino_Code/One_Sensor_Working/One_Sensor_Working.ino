@@ -10,8 +10,8 @@ int seconds = 0;
 
 
 #define NUM_LEDS	20
-#define MAX_SENSOR 	100.0f
-#define MIN_SENSOR 	10.0f
+#define MAX_SENSOR 	430.0f
+#define MIN_SENSOR 	0.0f
 #define MIN_LEDS 	1.0f
 #define LED_PIN 4
 
@@ -47,12 +47,21 @@ void setup()
   }
  
 }
+/**
+void loop(){
+  //use this to gather your highest and lowest values. Use these to update min and max sensor macros.
+  int temp = analogRead(A0);
+  Serial.print("\r\nsensor: \r\n"); //display sensor reading
+  Serial.print(temp);
+  delay(100);
+}
+**/
 
 void loop()
 {
   int getSmooth = 0;
   int temp;
-  while (getSmooth < 10 ){
+  while (getSmooth < 10){
     temp = analogRead(A0);
     if (temp > MIN_SENSOR){
       sensor += temp;
