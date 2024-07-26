@@ -9,7 +9,7 @@ int seconds = 0;
 
 
 
-#define NUM_LEDS	20
+#define NUM_LEDS	40
 #define MAX_SENSOR 	430.0f
 #define MIN_SENSOR 	0.0f
 #define MIN_LEDS 	1.0f
@@ -74,30 +74,42 @@ void loop()
   processSensorData(numLedsLUT[sensor]);
   sensor = 0;
 }
-
 void processSensorData(int number_leds_on){
-  for (int i = 0; i < NUM_LEDS; i++){ //for each LED in the strip
-    if (i < number_leds_on){ //if our current LED should be ON
-      if ( (i+1) <  (NUM_LEDS/4)){ //if in the bottom quarter of LEDs, color BLUE
-        leds[i] = CRGB(0,0,255);
-        FastLED.show();
-        delay(2);
-      } else if ( (i+1) >= (NUM_LEDS/4) && (i+1) <= (NUM_LEDS/2)) { // between bottom quarter and half, color GREEN
-        leds[i] = CRGB(0,255,0);
-        FastLED.show();
-        delay(2);
-      } else { //top 50% color red (we can change these percentages later
-        leds[i] = CRGB(255,0,0);
-        FastLED.show();
-        delay(2);
+  for (int i = 0; i < NUM_LEDS; i++){ // for each LED in the strip
+    if (i < number_leds_on){ // if our current LED should be ON
+      if ((i+1) <= (NUM_LEDS * 0.05)){ // bottom 5%, color BLUE
+        leds[i] = CRGB(0, 0, 255);
+      } else if ((i+1) <= (NUM_LEDS * 0.10)) { // next 5%, color GREEN-BLUE
+        leds[i] = CRGB(0, 128, 128);
+      } else if ((i+1) <= (NUM_LEDS * 0.20)) { // next 10%, color GREEN
+        leds[i] = CRGB(0, 255, 0);
+      } else if ((i+1) <= (NUM_LEDS * 0.30)) { // next 10%, color YELLOW-GREEN
+        leds[i] = CRGB(128, 255, 0);
+      } else if ((i+1) <= (NUM_LEDS * 0.40)) { // next 10%, color YELLOW
+        leds[i] = CRGB(255, 255, 0);
+      } else if ((i+1) <= (NUM_LEDS * 0.60)) { // next 20%, color ORANGE
+        leds[i] = CRGB(255, 165, 0);
+      } else { // top 40%, color RED
+        leds[i] = CRGB(255, 0, 0);
       }
-    } else { //outside of range of ON LEDs, turn off
-        leds[i] = CRGB(0,0,0);
-        FastLED.show();
-        delay(2);
+      FastLED.show();
+      delay(2);
+    } else { // outside of range of ON LEDs, turn off
+      leds[i] = CRGB(0, 0, 0);
+      FastLED.show();
+      delay(2);
     }
   }  
-    //lcd_1.clear(); //clear previous sensor reading
-  	Serial.print("\r\nsensor: \r\n"); //display sensor reading
-  	Serial.print(sensor);
+  
+  // Clear previous sensor reading on LCD
+  //lcd_1.clear();
+  
+  // Display sensor reading
+  Serial.print("\r\nsensor: \r\n");
+  Serial.print(sensor);
 }
+
+
+
+
+
