@@ -3,7 +3,7 @@
 
 int seconds = 0;
 
-#define NUM_LEDS 40
+#define NUM_LEDS 60
 #define MAX_SENSOR 430.0f
 #define MIN_SENSOR 0.0f
 #define MIN_LEDS 1.0f
@@ -12,7 +12,7 @@ int seconds = 0;
 #define BUTTON_BLUE_GREEN_PIN 6
 #define BUTTON_RED_YELLOW_PIN 7
 
-int delayval = 100;
+//int delayval = 100;
 int sensor;
 
 CRGB leds[NUM_LEDS];
@@ -125,10 +125,12 @@ void processSensorDataBlueGreen(int number_leds_on) {
 void processSensorDataRedYellow(int number_leds_on) {
     for (int i = 0; i < NUM_LEDS; i++) { // for each LED in the strip
         if (i < number_leds_on) { // if our current LED should be ON
-            if ((i + 1) <= (NUM_LEDS * 0.50)) { // bottom 50%, color RED
-                leds[i] = CRGB(255, 0, 0);
-            } else { // top 50%, color YELLOW
+            if ((i + 1) <= (NUM_LEDS * 0.30)) { // bottom 30%, color YELLOW
                 leds[i] = CRGB(255, 255, 0);
+            } else if ((i + 1) <= (NUM_LEDS * 0.60)) { // middle 40%, color ORANGE
+                leds[i] = CRGB(255, 165, 0);
+            } else { // top 30%, color RED
+                leds[i] = CRGB(255, 0, 0);
             }
         } else { // outside of range of ON LEDs, turn off
             leds[i] = CRGB(0, 0, 0);
@@ -136,6 +138,7 @@ void processSensorDataRedYellow(int number_leds_on) {
     }
     FastLED.show();
 }
+
 
 
 
