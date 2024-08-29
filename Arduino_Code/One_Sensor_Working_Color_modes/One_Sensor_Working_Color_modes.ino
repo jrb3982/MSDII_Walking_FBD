@@ -21,6 +21,11 @@ int numLedsLUT[(int)MAX_SENSOR];
 enum Pattern { REGULAR, BLUE_GREEN, RED_YELLOW };
 Pattern currentPattern = REGULAR;
 
+/*
+Setup:
+Initializes Color Modes,LEDs,etc
+Creates a LUT (numLedsLUT) maps each sensor value(i) to the number of LEDs that should be on
+*/
 void setup() {
     Serial.begin(9600);
     FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
@@ -37,6 +42,11 @@ void setup() {
     }
 }
 
+/* Loop
+Continuously updates the LEDs based on
+1) Button Pressed for Color Mode
+2) Sensor Value 
+*/
 void loop() {
     // Check if the regular pattern button is pressed
     if (digitalRead(BUTTON_REGULAR_PIN) == LOW) {
@@ -86,6 +96,10 @@ void loop() {
     sensor = 0;
 }
 
+/*
+Displays Sensor Value on LEDs
+Input: number of LEDs on (From LUT)
+*/
 void processSensorData(int number_leds_on) {
     for (int i = 0; i < NUM_LEDS; i++) { // for each LED in the strip
         if (i < number_leds_on) { // if our current LED should be ON
