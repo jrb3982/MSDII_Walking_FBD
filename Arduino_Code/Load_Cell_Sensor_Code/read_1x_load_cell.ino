@@ -35,6 +35,7 @@ unsigned long t = 0;
 
 void setup() {
   Serial.begin(57600); delay(10);
+  
   Serial.println();
   Serial.println("Starting...");
 
