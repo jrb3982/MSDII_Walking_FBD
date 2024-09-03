@@ -28,6 +28,9 @@ void setup() {
     pinMode(BUTTON_REGULAR_PIN, INPUT_PULLUP);
     pinMode(BUTTON_BLUE_GREEN_PIN, INPUT_PULLUP);
     pinMode(BUTTON_RED_YELLOW_PIN, INPUT_PULLUP);
+    for (int i = 0; i < NUM_SENSORS; i++) {
+      pinMode(sel[i], OUTPUT);  // Set each pin as an output
+    }
 
     // populate lookup table with #LEDs on for a given force
     for (int i = 0; i < MAX_SENSOR; i++) {
@@ -40,11 +43,9 @@ void setup() {
 void loop() {
     int getSmooth = 0;
     int temp;  
-    digitalWrite(8, HIGH); 
-    digitalWrite(9, LOW); 
-    digitalWrite(10, LOW); 
-    digitalWrite(11, LOW); 
-    // Check if the regular pattern button is pressed
+
+    multiplexOut(selPattern);
+    //Check if the regular pattern button is pressed
     if (digitalRead(BUTTON_REGULAR_PIN) == LOW) {
         currentPattern = REGULAR;
         Serial.println("Regular gradient selected.");
@@ -64,8 +65,7 @@ void loop() {
         Serial.println("Red-yellow gradient selected.");
         delay(200); // Debounce delay
     }
-
-    //multiplexOut(selPattern);
+    multiplexOut(selPattern);
     // Read sensor value
     while (getSmooth < 10) {
         temp = analogRead(A0);
@@ -89,12 +89,11 @@ void loop() {
             break;
     }
     sensor = 0;
-    if (selPattern < NUM_SENSORS){
+    if (selPattern < NUM_SENSORS - 1){
       selPattern++;
     } else {
       selPattern = 0;
     }
-    
 }
 
 void processSensorData(int number_leds_on) {
