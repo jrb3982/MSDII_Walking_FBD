@@ -11,7 +11,9 @@
 #define BUTTON_RED_YELLOW_PIN 7
 #define NUM_SENSORS 3
 
-int sensor;
+int sensor[NUM_SENSORS];
+int sensorSum;
+int sensorAvg;
 int sel[] = {8,9,10,11};
 CRGB leds[NUM_LEDS];
 int numLedsLUT[(int)MAX_SENSOR];
@@ -44,7 +46,6 @@ void loop() {
     int getSmooth = 0;
     int temp;  
 
-    multiplexOut(selPattern);
     //Check if the regular pattern button is pressed
     if (digitalRead(BUTTON_REGULAR_PIN) == LOW) {
         currentPattern = REGULAR;
@@ -65,35 +66,42 @@ void loop() {
         Serial.println("Red-yellow gradient selected.");
         delay(200); // Debounce delay
     }
-    multiplexOut(selPattern);
-    // Read sensor value
-    while (getSmooth < 10) {
-        temp = analogRead(A0);
-        if (temp > MIN_SENSOR) {
-            sensor += temp;
-            getSmooth++;
-        }
-    }
-    sensor = (int)(sensor / 10);
 
+    for (int i = 0; i < NUM_SENSORS; i++){
+      multiplexOut(i);
+      // Read sensor value
+      // while (getSmooth < 10) {
+      //     temp = analogRead(A0);
+      //     if (temp > MIN_SENSOR) {
+      //         sensor[i] += temp;
+      //         getSmooth++;
+      //     }
+      // }
+      // sensor[i] = (int)(sensor[i] / 10);
+      sensorSum += analogRead(A0);
+     // getSmooth = 0;
+    }
+
+    sensorAvg = (int)(sensorSum / NUM_SENSORS);
     // Display LEDs according to sensor value with the selected gradient
     switch (currentPattern) {
         case REGULAR:
-            processSensorData(numLedsLUT[sensor]);
+            processSensorData(numLedsLUT[sensorAvg]);
             break;
         case BLUE_GREEN:
-            processSensorDataBlueGreen(numLedsLUT[sensor]);
+            processSensorDataBlueGreen(numLedsLUT[sensorAvg]);
             break;
         case RED_YELLOW:
-            processSensorDataRedYellow(numLedsLUT[sensor]);
+            processSensorDataRedYellow(numLedsLUT[sensorAvg]);
             break;
     }
-    sensor = 0;
-    if (selPattern < NUM_SENSORS - 1){
-      selPattern++;
-    } else {
-      selPattern = 0;
-    }
+    sensorSum = 0;
+    sensorAvg = 0;
+    // if (selPattern < NUM_SENSORS - 1){
+    //   selPattern++;
+    // } else {
+    //   selPattern = 0;
+    // }
 }
 
 void processSensorData(int number_leds_on) {
