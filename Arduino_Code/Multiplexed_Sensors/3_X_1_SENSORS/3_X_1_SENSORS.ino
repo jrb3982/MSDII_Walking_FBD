@@ -2,7 +2,7 @@
 #include "math.h"
 
 #define NUM_LEDS 60
-#define MAX_SENSOR 430.0f
+#define MAX_SENSOR 200.0f
 #define MIN_SENSOR 0.0f
 #define MIN_LEDS 1.0f
 #define LED_PIN 4
