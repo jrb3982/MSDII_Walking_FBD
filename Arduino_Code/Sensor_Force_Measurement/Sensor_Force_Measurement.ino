@@ -76,24 +76,16 @@ void loop()
 }
 
 void determineForce(int sensor) {
-  float fsrVoltage = 0.0;
-  float fsrResistance = 0.0;
-
-  fsrVoltage = ((sensor / 1023.0) * 5000.0) ; 
-  Serial.print("Voltage reading in mV = ");
-  Serial.println(fsrVoltage);  
-
-  // The voltage = Vcc * R / (R + FSR) where R = 10K and Vcc = 5V
-  // so FSR = ((Vcc - V) * R) / V        yay math!
-  fsrResistance = (((5000 - fsrVoltage) * 1000.0f)/fsrVoltage);     // fsrVoltage is in millivolts so 5V = 5000mV
-  Serial.print("FSR resistance in ohms = ");
-  Serial.println(fsrResistance);
-  
-
-  float forceVal1 = fsrResistance / (194.46f);
-  float forceVal2 = pow(forceVal1,(1/(-0.663f)));
+  float forceVal;
+  float gram_force;
+  if (sensor > 1){
+    gram_force = 62*exp(0.0254f*sensor);//see plot of g vs sensor out
+    forceVal  = (9.8 * (gram_force*0.001f)); //f = m(kg)*9.8, correction factor of 0.62 to offset  
+  } else {
+    forceVal = 0.0;
+  }
   Serial.print("FSR Force in N = ");
-  Serial.println(forceVal2 * 9.8f);
+  Serial.println(forceVal);
  
 }
 
