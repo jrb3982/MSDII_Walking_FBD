@@ -86,7 +86,6 @@ void determineForce(int sensor) {
   }
   Serial.print("FSR Force in N = ");
   Serial.println(forceVal);
- 
 }
 
 void processSensorData(int number_leds_on){

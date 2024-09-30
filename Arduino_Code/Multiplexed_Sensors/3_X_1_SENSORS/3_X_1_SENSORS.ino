@@ -2,7 +2,8 @@
 #include "math.h"
 
 #define NUM_LEDS 20
-#define MAX_SENSOR 200.0f
+#define MAX_SENSOR_FOR_LEDS 50.0f
+#define ABS_MAX 150.0f
 #define MIN_SENSOR 0.0f
 #define MIN_LEDS 1.0f
 #define LED_PIN 4
@@ -13,10 +14,13 @@
 
 int sensor[NUM_SENSORS];
 int sensorSum;
+float forceSum;
 int sensorAvg;
+float forceAvg;
 int sel[] = {8,9,10,11};
 CRGB leds[NUM_LEDS];
-int numLedsLUT[(int)MAX_SENSOR];
+int numLedsLUT[(int)MAX_SENSOR_FOR_LEDS];
+float forceLUT[(int)ABS_MAX];
 int seconds = 0;
 int selPattern = 0; 
 
@@ -35,10 +39,13 @@ void setup() {
     }
 
     // populate lookup table with #LEDs on for a given force
-    for (int i = 0; i < MAX_SENSOR; i++) {
+    for (int i = 0; i < (int)MAX_SENSOR_FOR_LEDS; i++) {
         // num LEDs on determined via interpolation scaling
-        float float_leds_on = ((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (i - MIN_SENSOR) + MIN_LEDS;
+        float float_leds_on = ((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR_FOR_LEDS - MIN_SENSOR)) * (i - MIN_SENSOR) + MIN_LEDS;
         numLedsLUT[i] = (int) round(float_leds_on); // populate LUT
+    }
+    for (int i = 0; i < (int)ABS_MAX; i++){
+        forceLUT[i] = (float)determineForce(i);
     }
 }
 
@@ -78,12 +85,20 @@ void loop() {
       //     }
       // }
       // sensor[i] = (int)(sensor[i] / 10);
-      sensorSum += analogRead(A0);
+      temp = analogRead(A0);
+      forceSum += forceLUT[temp];
+      sensorSum += temp;
      // getSmooth = 0;
     }
 
     sensorAvg = (int)(sensorSum / NUM_SENSORS);
+    Serial.println("Force =");
+    Serial.print(forceSum);
+    Serial.println(" N");
     // Display LEDs according to sensor value with the selected gradient
+    if (sensorAvg >= MAX_SENSOR_FOR_LEDS){
+        sensorAvg = MAX_SENSOR_FOR_LEDS-1;
+    } 
     switch (currentPattern) {
         case REGULAR:
             processSensorData(numLedsLUT[sensorAvg]);
@@ -97,6 +112,9 @@ void loop() {
     }
     sensorSum = 0;
     sensorAvg = 0;
+    forceSum = 0;
+    forceAvg =0;
+    delay(500);
     // if (selPattern < NUM_SENSORS - 1){
     //   selPattern++;
     // } else {
@@ -166,3 +184,17 @@ void multiplexOut(int selPattern) {
     }
   }
 }
+
+float determineForce(int sensor) {
+  float forceVal;
+  float gram_force;
+  if (sensor > 1){
+    gram_force = 62*exp(0.0254f*sensor);//see plot of g vs sensor out
+    forceVal  = (9.8 * (gram_force*0.001f)); //f = m(kg)*9.8, correction factor of 0.62 to offset  
+  } else {
+    forceVal = 0.0;
+  }
+  return forceVal;
+
+}
+
