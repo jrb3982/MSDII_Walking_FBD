@@ -33,13 +33,11 @@
 
 #define GRAVITY     9.80f
 #define NUM_LEDS	40
-#define MAX_SENSOR  6000.0f
+#define MAX_SENSOR  1500.0f
 #define MIN_SENSOR 	0.0f
 #define MIN_LEDS 	1.0f
 #define LED_PIN 12
-#define BUTTON_REGULAR_PIN 5
-#define BUTTON_BLUE_GREEN_PIN 6
-#define BUTTON_RED_YELLOW_PIN 7
+
 
 
 #if defined(ESP8266)|| defined(ESP32) || defined(AVR)
@@ -74,9 +72,9 @@ unsigned long t = 0;
 void setup() {
   Serial.begin(57600); delay(10);
   FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
-  pinMode(BUTTON_REGULAR_PIN, INPUT_PULLUP);
-  pinMode(BUTTON_BLUE_GREEN_PIN, INPUT_PULLUP);
-  pinMode(BUTTON_RED_YELLOW_PIN, INPUT_PULLUP);
+  // pinMode(BUTTON_REGULAR_PIN, INPUT_PULLUP);
+  // pinMode(BUTTON_BLUE_GREEN_PIN, INPUT_PULLUP);
+  // pinMode(BUTTON_RED_YELLOW_PIN, INPUT_PULLUP);
   //populate lookup table with #LEDs on for a given force
   for (int i = 0; i < MAX_SENSOR; i++){
     //num LEDs on determined via interpolation scaling
@@ -87,8 +85,8 @@ void setup() {
   float calibrationValue_1; // calibration value load cell 1
   float calibrationValue_2; // calibration value load cell 2
 
-  calibrationValue_1 = 696.0; // uncomment this if you want to set this value in the sketch
-  calibrationValue_2 = 733.0; // uncomment this if you want to set this value in the sketch
+  calibrationValue_1 = -97.02; // uncomment this if you want to set this value in the sketch
+  calibrationValue_2 = -74.65; // uncomment this if you want to set this value in the sketch
 #if defined(ESP8266) || defined(ESP32)
   //EEPROM.begin(512); // uncomment this if you use ESP8266 and want to fetch the value from eeprom
 #endif
@@ -108,14 +106,14 @@ void setup() {
     if (!loadcell_2_rdy) loadcell_2_rdy = LoadCell_2.startMultiple(stabilizingtime, _tare);
   }
   if (LoadCell_1.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 no.1 wiring and pin designations");
+   // Serial.println("Timeout, check MCU>HX711 no.1 wiring and pin designations");
   }
   if (LoadCell_2.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 no.2 wiring and pin designations");
+    //Serial.println("Timeout, check MCU>HX711 no.2 wiring and pin designations");
   }
   LoadCell_1.setCalFactor(calibrationValue_1); // user set calibration value (float)
   LoadCell_2.setCalFactor(calibrationValue_2); // user set calibration value (float)
-  Serial.println("Startup is complete");
+ // Serial.println("Startup is complete");
   
 }
 
@@ -124,47 +122,43 @@ void loop() {
   const int serialPrintInterval = 0; //increase value to slow down serial print activity
   int getSmooth = 0;
   int temp;
-  int c;
+  float c;
 
-  load_cell_data(c);
-  if (digitalRead(BUTTON_REGULAR_PIN) == LOW) {
+  c=load_cell_data(c);
+  //if (digitalRead(BUTTON_REGULAR_PIN) == LOW) {
         currentPattern = REGULAR;
-        Serial.println("Regular gradient selected.");
-        delay(200); // Debounce delay
-    }
+    //    Serial.println("Regular gradient selected.");
+    //    delay(200); // Debounce delay
+   // }
 
-    // Check if the blue-green pattern button is pressed
-    if (digitalRead(BUTTON_BLUE_GREEN_PIN) == LOW) {
-        currentPattern = BLUE_GREEN;
-        Serial.println("Blue-green gradient selected.");
-        delay(200); // Debounce delay
-    }
+    // // Check if the blue-green pattern button is pressed
+    // if (digitalRead(BUTTON_BLUE_GREEN_PIN) == LOW) {
+    //     currentPattern = BLUE_GREEN;
+    //     Serial.println("Blue-green gradient selected.");
+    //     delay(200); // Debounce delay
+    // }
 
-    // Check if the red-yellow pattern button is pressed
-    if (digitalRead(BUTTON_RED_YELLOW_PIN) == LOW) {
-        currentPattern = RED_YELLOW;
-        Serial.println("Red-yellow gradient selected.");
-        delay(200); // Debounce delay
-    }
-  while (getSmooth < 10){
-    temp = c;
-    if (temp > MIN_SENSOR){
-      sensor += temp;
-      getSmooth++;
-    }
-  }
+    // // Check if the red-yellow pattern button is pressed
+    // if (digitalRead(BUTTON_RED_YELLOW_PIN) == LOW) {
+    //     currentPattern = RED_YELLOW;
+    //     Serial.println("Red-yellow gradient selected.");
+    //     delay(200); // Debounce delay
+    // }
+  sensor=c;
 
-  sensor = (int)(sensor/10);
+  sensor = (int)(sensor);
+  Serial.println(sensor);
   //Display LEDs/OLED according to sensor value
   switch (currentPattern) {
         case REGULAR:
-            processSensorData(numLedsLUT[sensor]);
+            
+            processSensorData(((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor - MIN_SENSOR) + MIN_LEDS);
             break;
         case BLUE_GREEN:
-            processSensorDataBlueGreen(numLedsLUT[sensor]);
+            processSensorDataBlueGreen(((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor - MIN_SENSOR) + MIN_LEDS);
             break;
         case RED_YELLOW:
-            processSensorDataRedYellow(numLedsLUT[sensor]);
+            processSensorDataRedYellow(((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor - MIN_SENSOR) + MIN_LEDS);
             break;
     }
   sensor = 0;
@@ -227,7 +221,7 @@ void processSensorDataRedYellow(int number_leds_on) {
     FastLED.show();
 }
 
-void load_cell_data(int c){
+float load_cell_data(float c){
 static boolean newDataReady = 0;
   const int serialPrintInterval = 0; //increase value to slow down serial print activity
 
@@ -236,20 +230,20 @@ static boolean newDataReady = 0;
   LoadCell_2.update();
 
   //get smoothed value from data set
-  if ((newDataReady)) {
-    if (millis() > t + serialPrintInterval) {
+  //if ((newDataReady)) {
+    //if (millis() > t + serialPrintInterval) {
       
       c = (LoadCell_2.getData()+LoadCell_1.getData())/2;
-      Serial.print(F("Load_cell 1 output val: "));
-      Serial.println(LoadCell_2.getData());
-      Serial.println(F("    Load_cell 2 output val: "));
-      Serial.println(LoadCell_1.getData());
-      Serial.println(F("    Load_cell Average output val: "));
-      Serial.println(c);
+      // Serial.print(F("Load_cell 1 output val: "));
+      // Serial.println(LoadCell_2.getData());
+      // Serial.println(F("    Load_cell 2 output val: "));
+      // Serial.println(LoadCell_1.getData());
+      // Serial.println(F("    Load_cell Average output val: "));
+      // Serial.println(c);
       newDataReady = 0;
       t = millis();
-    }
-  }
+    //}
+  //}
 
   // receive command from serial terminal, send 't' to initiate tare operation:
   if (Serial.available() > 0) {
@@ -267,4 +261,5 @@ static boolean newDataReady = 0;
   if (LoadCell_2.getTareStatus() == true) {
     Serial.println("Tare load cell 2 complete");
   }
+  return c;
 }
