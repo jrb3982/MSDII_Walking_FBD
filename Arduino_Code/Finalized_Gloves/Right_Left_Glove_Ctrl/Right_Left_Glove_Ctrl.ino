@@ -11,6 +11,7 @@
 #define BUTTON_REGULAR_PIN 5
 #define BUTTON_BLUE_GREEN_PIN 6
 #define BUTTON_RED_YELLOW_PIN 7
+#define BUTTON_COOL_SCHEME_PIN 7
 #define NUM_SENSORS 9
 
 int sensor[NUM_SENSORS];
@@ -24,7 +25,7 @@ float forceLUT[(int)ABS_MAX];
 int seconds = 0;
 int selPattern = 0; 
 
-enum Pattern { REGULAR, BLUE_GREEN, RED_YELLOW };
+enum Pattern { REGULAR, BLUE_GREEN, RED_YELLOW, COOL_SCHEME };
 Pattern currentPattern = REGULAR;
 
 void setup() {
@@ -74,6 +75,12 @@ void loop() {
     }
 
     // // Check if the red-yellow pattern button is pressed
+    if (digitalRead(BUTTON_RED_YELLOW_PIN) == LOW) {
+        currentPattern = RED_YELLOW;
+        Serial.println("Red-yellow gradient selected.");
+        delay(200); // Debounce delay
+    }
+
     if (digitalRead(BUTTON_RED_YELLOW_PIN) == LOW) {
         currentPattern = RED_YELLOW;
         Serial.println("Red-yellow gradient selected.");
@@ -148,7 +155,12 @@ void loop() {
             processSensorDataRedYellow(numLedsLUT[sensorSum1],leds1);
             processSensorDataRedYellow(numLedsLUT[sensorSum2],leds2);
             break;
+        case COOL_SCHEME:
+            processSensorDataCool(numLedsLUT[sensorSum1],leds1);
+            processSensorDataCool(numLedsLUT[sensorSum1],leds2);
+            break;
     }
+    
     sensorSum1 = 0;
     forceSum1 = 0;
     sensorSum2 = 0;
@@ -214,6 +226,25 @@ void processSensorDataRedYellow(int number_leds_on, CRGB * leds) {
     FastLED.show();
 }
 
+void processSensorDataCool(int number_leds_on, CRGB * leds) {
+    for (int i = 0; i < NUM_LEDS; i++) { // for each LED in the strip
+        if (i < number_leds_on) { // if our current LED should be ON
+            if ((i + 1) <= (NUM_LEDS * 0.25)) { // bottom 25%, color TEAL
+                leds[i] = CRGB(0, 128, 128);
+            } else if ((i + 1) <= (NUM_LEDS * 0.50)) { // next 25%, color BLUE
+                leds[i] = CRGB(0, 0, 255);
+            } else if ((i + 1) <= (NUM_LEDS * 0.75)) { // next 25%, color PURPLE
+                leds[i] = CRGB(128, 0, 128);
+            } else { // top 25%, color LIGHT BLUE
+                leds[i] = CRGB(173, 216, 230);
+            }
+        } else { // outside of range of ON LEDs, turn off
+            leds[i] = CRGB(0, 0, 0);
+        }
+    }
+    FastLED.show();
+}
+
 void multiplexOut(int selPattern) {
   for (int i = 0; i < NUM_SENSORS; i++) {
     if (selPattern & (1 << i)) {
@@ -235,4 +266,3 @@ float determineForce(int sensor) {
   }
   return forceVal;
 }
-
