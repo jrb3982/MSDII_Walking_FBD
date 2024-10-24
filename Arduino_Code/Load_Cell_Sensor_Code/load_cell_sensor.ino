@@ -32,12 +32,12 @@
 #include "math.h"
 
 #define GRAVITY     9.80f
-#define NUM_LEDS	40
-#define MAX_SENSOR  1500.0f
-#define MIN_SENSOR 	0.0f
+#define NUM_LEDS	20
+#define MAX_SENSOR  2000.0f
+#define MIN_SENSOR 	20.0f
 #define MIN_LEDS 	1.0f
 #define LED_PIN 12
-
+#define LED_PIN_2 13
 
 
 #if defined(ESP8266)|| defined(ESP32) || defined(AVR)
@@ -47,8 +47,10 @@
 int delayval = 100;
 
 int sensor;
+int sensor_2;
 
-CRGB leds[NUM_LEDS];
+CRGB leds1[NUM_LEDS];
+CRGB leds2[NUM_LEDS];
 
 int numLedsLUT[(int)MAX_SENSOR];
 enum Pattern { REGULAR, BLUE_GREEN, RED_YELLOW };
@@ -60,18 +62,31 @@ const int HX711_dout_1 = 4; //mcu > HX711 no 1 dout pin
 const int HX711_sck_1 = 5; //mcu > HX711 no 1 sck pin
 const int HX711_dout_2 = 6; //mcu > HX711 no 2 dout pin
 const int HX711_sck_2 = 7; //mcu > HX711 no 2 sck pin
+const int HX711_dout_3 = 2; //mcu > HX711 no 1 dout pin
+const int HX711_sck_3 = 3; //mcu > HX711 no 1 sck pin
+const int HX711_dout_4 = 8; //mcu > HX711 no 2 dout pin
+const int HX711_sck_4 = 9; //mcu > HX711 no 2 sck pin
 
 //HX711 constructor (dout pin, sck pin)
 HX711_ADC LoadCell_1(HX711_dout_1, HX711_sck_1); //HX711 1
 HX711_ADC LoadCell_2(HX711_dout_2, HX711_sck_2); //HX711 2
+HX711_ADC LoadCell_3(HX711_dout_3, HX711_sck_3); //HX711 1
+HX711_ADC LoadCell_4(HX711_dout_4, HX711_sck_4); //HX711 2
+
+
 
 const int calVal_eepromAdress_1 = 0; // eeprom adress for calibration value load cell 1 (4 bytes)
 const int calVal_eepromAdress_2 = 4; // eeprom adress for calibration value load cell 2 (4 bytes)
+const int calVal_eepromAdress_3 = 8; // eeprom adress for calibration value load cell 2 (4 bytes)
+const int calVal_eepromAdress_4 = 12; // eeprom adress for calibration value load cell 2 (4 bytes)
+
+
 unsigned long t = 0;
 
 void setup() {
   Serial.begin(57600); delay(10);
-  FastLED.addLeds<WS2812, LED_PIN, GRB>(leds, NUM_LEDS);
+  FastLED.addLeds<WS2812, LED_PIN, GRB>(leds1, NUM_LEDS);
+  FastLED.addLeds<WS2812, LED_PIN_2, GRB>(leds2, NUM_LEDS);
   // pinMode(BUTTON_REGULAR_PIN, INPUT_PULLUP);
   // pinMode(BUTTON_BLUE_GREEN_PIN, INPUT_PULLUP);
   // pinMode(BUTTON_RED_YELLOW_PIN, INPUT_PULLUP);
@@ -84,9 +99,14 @@ void setup() {
 
   float calibrationValue_1; // calibration value load cell 1
   float calibrationValue_2; // calibration value load cell 2
+  float calibrationValue_3;
+  float calibrationValue_4;
 
   calibrationValue_1 = -97.02; // uncomment this if you want to set this value in the sketch
   calibrationValue_2 = -74.65; // uncomment this if you want to set this value in the sketch
+  calibrationValue_3 = -97.02; // uncomment this if you want to set this value in the sketch
+  calibrationValue_4 = -74.65; // uncomment this if you want to set this value in the sketch
+  
 #if defined(ESP8266) || defined(ESP32)
   //EEPROM.begin(512); // uncomment this if you use ESP8266 and want to fetch the value from eeprom
 #endif
@@ -95,24 +115,40 @@ void setup() {
 
   LoadCell_1.begin();
   LoadCell_2.begin();
+  LoadCell_3.begin();
+  LoadCell_4.begin();
   //LoadCell_1.setReverseOutput();
   //LoadCell_2.setReverseOutput();
   unsigned long stabilizingtime = 2000; // tare preciscion can be improved by adding a few seconds of stabilizing time
   boolean _tare = true; //set this to false if you don't want tare to be performed in the next step
   byte loadcell_1_rdy = 0;
   byte loadcell_2_rdy = 0;
-  while ((loadcell_1_rdy + loadcell_2_rdy) < 2) { //run startup, stabilization and tare, both modules simultaniously
+  byte loadcell_3_rdy = 0;
+  byte loadcell_4_rdy = 0;
+  while ((loadcell_1_rdy + loadcell_2_rdy +loadcell_3_rdy +loadcell_4_rdy) < 4) { //run startup, stabilization and tare, both modules simultaniously
     if (!loadcell_1_rdy) loadcell_1_rdy = LoadCell_1.startMultiple(stabilizingtime, _tare);
     if (!loadcell_2_rdy) loadcell_2_rdy = LoadCell_2.startMultiple(stabilizingtime, _tare);
+    if (!loadcell_3_rdy) loadcell_3_rdy = LoadCell_3.startMultiple(stabilizingtime, _tare);
+    if (!loadcell_4_rdy) loadcell_4_rdy = LoadCell_4.startMultiple(stabilizingtime, _tare);
+    
   }
+ 
   if (LoadCell_1.getTareTimeoutFlag()) {
-   // Serial.println("Timeout, check MCU>HX711 no.1 wiring and pin designations");
+      Serial.println("Timeout, check MCU>HX711 no.1 wiring and pin designations");
   }
   if (LoadCell_2.getTareTimeoutFlag()) {
-    //Serial.println("Timeout, check MCU>HX711 no.2 wiring and pin designations");
+    Serial.println("Timeout, check MCU>HX711 no.2 wiring and pin designations");
+  }
+  if (LoadCell_3.getTareTimeoutFlag()) {
+      Serial.println("Timeout, check MCU>HX711 no.1 wiring and pin designations");
+  }
+  if (LoadCell_4.getTareTimeoutFlag()) {
+    Serial.println("Timeout, check MCU>HX711 no.2 wiring and pin designations");
   }
   LoadCell_1.setCalFactor(calibrationValue_1); // user set calibration value (float)
   LoadCell_2.setCalFactor(calibrationValue_2); // user set calibration value (float)
+  LoadCell_3.setCalFactor(calibrationValue_3); // user set calibration value (float)
+  LoadCell_4.setCalFactor(calibrationValue_4); // user set calibration value (float)
  // Serial.println("Startup is complete");
   
 }
@@ -123,8 +159,10 @@ void loop() {
   int getSmooth = 0;
   int temp;
   float c;
+  float d;
 
   c=load_cell_data(c);
+  d=load_cell_data_2(d);
   //if (digitalRead(BUTTON_REGULAR_PIN) == LOW) {
         currentPattern = REGULAR;
     //    Serial.println("Regular gradient selected.");
@@ -145,30 +183,37 @@ void loop() {
     //     delay(200); // Debounce delay
     // }
   sensor=c;
-
+  sensor_2=d;
   sensor = (int)(sensor);
+  sensor_2=(int)(sensor_2);
+  Serial.print(F("Foot 1 output val: "));
   Serial.println(sensor);
+   Serial.print(F("Foot 2output val: "));
+  Serial.println(sensor_2);
   //Display LEDs/OLED according to sensor value
   switch (currentPattern) {
         case REGULAR:
             
-            processSensorData(((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor - MIN_SENSOR) + MIN_LEDS);
+            processSensorData((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor - MIN_SENSOR) + MIN_LEDS),leds1);
+            processSensorData((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor_2 - MIN_SENSOR) + MIN_LEDS),leds2);
             break;
         case BLUE_GREEN:
-            processSensorDataBlueGreen(((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor - MIN_SENSOR) + MIN_LEDS);
+            processSensorDataBlueGreen((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor - MIN_SENSOR) + MIN_LEDS),leds1);
+            
             break;
         case RED_YELLOW:
-            processSensorDataRedYellow(((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor - MIN_SENSOR) + MIN_LEDS);
+            processSensorDataRedYellow((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor - MIN_SENSOR) + MIN_LEDS),leds1);
             break;
     }
   sensor = 0;
+  sensor_2=0;
 
 }
 /*
 Displays Sensor Value on LEDs
 Input: number of LEDs on (From LUT)
 */
-void processSensorData(int number_leds_on) {
+void processSensorData(int number_leds_on, CRGB * leds) {
     for (int i = 0; i < NUM_LEDS; i++) { // for each LED in the strip
         if (i < number_leds_on) { // if our current LED should be ON
             if ((i + 1) <= (NUM_LEDS * 0.05)) { // bottom 5%, color BLUE
@@ -193,7 +238,7 @@ void processSensorData(int number_leds_on) {
     FastLED.show();
 }
 
-void processSensorDataBlueGreen(int number_leds_on) {
+void processSensorDataBlueGreen(int number_leds_on, CRGB * leds) {
     for (int i = 0; i < NUM_LEDS; i++) { // for each LED in the strip
         if (i < number_leds_on) { // if our current LED should be ON
             leds[i] = CRGB(0, (255 * i) / NUM_LEDS, (255 * (NUM_LEDS - i)) / NUM_LEDS);
@@ -204,7 +249,7 @@ void processSensorDataBlueGreen(int number_leds_on) {
     FastLED.show();
 }
 
-void processSensorDataRedYellow(int number_leds_on) {
+void processSensorDataRedYellow(int number_leds_on, CRGB * leds) {
     for (int i = 0; i < NUM_LEDS; i++) { // for each LED in the strip
         if (i < number_leds_on) { // if our current LED should be ON
             if ((i + 1) <= (NUM_LEDS * 0.30)) { // bottom 30%, color YELLOW
@@ -262,4 +307,46 @@ static boolean newDataReady = 0;
     Serial.println("Tare load cell 2 complete");
   }
   return c;
+}
+float load_cell_data_2(float d){
+static boolean newDataReady = 0;
+  const int serialPrintInterval = 0; //increase value to slow down serial print activity
+
+  // check for new data/start next conversion:
+  if (LoadCell_3.update()) newDataReady = true;
+  LoadCell_4.update();
+
+  //get smoothed value from data set
+  //if ((newDataReady)) {
+    //if (millis() > t + serialPrintInterval) {
+      
+      d = (LoadCell_3.getData()+LoadCell_4.getData())/2;
+      // Serial.print(F("Load_cell 1 output val: "));
+      // Serial.println(LoadCell_2.getData());
+      // Serial.println(F("    Load_cell 2 output val: "));
+      // Serial.println(LoadCell_1.getData());
+      // Serial.println(F("    Load_cell Average output val: "));
+      // Serial.println(c);
+      newDataReady = 0;
+      t = millis();
+    //}
+  //}
+
+  // receive command from serial terminal, send 't' to initiate tare operation:
+  if (Serial.available() > 0) {
+    char inByte = Serial.read();
+    if (inByte == 't') {
+      LoadCell_3.tareNoDelay();
+      LoadCell_4.tareNoDelay();
+    }
+  }
+
+  //check if last tare operation is complete
+  if (LoadCell_3.getTareStatus() == true) {
+    Serial.println("Tare load cell 1 complete");
+  }
+  if (LoadCell_4.getTareStatus() == true) {
+    Serial.println("Tare load cell 2 complete");
+  }
+  return d;
 }
