@@ -33,11 +33,18 @@
 
 #define GRAVITY     9.80f
 #define NUM_LEDS	20
-#define MAX_SENSOR  2000.0f
-#define MIN_SENSOR 	20.0f
+#define MAX_SENSOR  3000.0f
+//#define MIN_SENSOR 	20.0f
 #define MIN_LEDS 	1.0f
 #define LED_PIN 12
 #define LED_PIN_2 13
+#define LED_PIN_3 11
+#define CALIBRATION_PIN 10
+#define BUTTON_REGULAR_PIN 14
+#define BUTTON_BLUE_GREEN_PIN 15
+#define BUTTON_RED_YELLOW_PIN 16
+#define BUTTON_COOL_SCHEME_PIN 17
+
 
 
 #if defined(ESP8266)|| defined(ESP32) || defined(AVR)
@@ -45,17 +52,20 @@
 #endif
 
 int delayval = 100;
-
+int user_weight=0;
 int sensor;
 int sensor_2;
+int sensor_3;
+
 
 CRGB leds1[NUM_LEDS];
 CRGB leds2[NUM_LEDS];
+CRGB leds3[NUM_LEDS];
 
 int numLedsLUT[(int)MAX_SENSOR];
-enum Pattern { REGULAR, BLUE_GREEN, RED_YELLOW };
+enum Pattern { REGULAR, BLUE_GREEN, RED_YELLOW,COOL_SCHEME };
 Pattern currentPattern = REGULAR;
-
+float MIN_SENSOR=20.0f;
 
 //pins:
 const int HX711_dout_1 = 4; //mcu > HX711 no 1 dout pin
@@ -87,9 +97,13 @@ void setup() {
   Serial.begin(57600); delay(10);
   FastLED.addLeds<WS2812, LED_PIN, GRB>(leds1, NUM_LEDS);
   FastLED.addLeds<WS2812, LED_PIN_2, GRB>(leds2, NUM_LEDS);
-  // pinMode(BUTTON_REGULAR_PIN, INPUT_PULLUP);
-  // pinMode(BUTTON_BLUE_GREEN_PIN, INPUT_PULLUP);
-  // pinMode(BUTTON_RED_YELLOW_PIN, INPUT_PULLUP);
+  FastLED.addLeds<WS2812, LED_PIN_3, GRB>(leds3, NUM_LEDS);
+   
+  pinMode(BUTTON_REGULAR_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_BLUE_GREEN_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_RED_YELLOW_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_COOL_SCHEME_PIN,INPUT_PULLUP);
+  pinMode(CALIBRATION_PIN,INPUT_PULLUP);
   //populate lookup table with #LEDs on for a given force
   for (int i = 0; i < MAX_SENSOR; i++){
     //num LEDs on determined via interpolation scaling
@@ -133,18 +147,7 @@ void setup() {
     
   }
  
-  if (LoadCell_1.getTareTimeoutFlag()) {
-      Serial.println("Timeout, check MCU>HX711 no.1 wiring and pin designations");
-  }
-  if (LoadCell_2.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 no.2 wiring and pin designations");
-  }
-  if (LoadCell_3.getTareTimeoutFlag()) {
-      Serial.println("Timeout, check MCU>HX711 no.1 wiring and pin designations");
-  }
-  if (LoadCell_4.getTareTimeoutFlag()) {
-    Serial.println("Timeout, check MCU>HX711 no.2 wiring and pin designations");
-  }
+ 
   LoadCell_1.setCalFactor(calibrationValue_1); // user set calibration value (float)
   LoadCell_2.setCalFactor(calibrationValue_2); // user set calibration value (float)
   LoadCell_3.setCalFactor(calibrationValue_3); // user set calibration value (float)
@@ -160,49 +163,76 @@ void loop() {
   int temp;
   float c;
   float d;
-
+  float n;
+  
   c=load_cell_data(c);
   d=load_cell_data_2(d);
-  //if (digitalRead(BUTTON_REGULAR_PIN) == LOW) {
-        currentPattern = REGULAR;
-    //    Serial.println("Regular gradient selected.");
-    //    delay(200); // Debounce delay
-   // }
+  if(digitalRead(CALIBRATION_PIN)==LOW){
+      n=c+d;
+      MIN_SENSOR=n;
 
-    // // Check if the blue-green pattern button is pressed
-    // if (digitalRead(BUTTON_BLUE_GREEN_PIN) == LOW) {
-    //     currentPattern = BLUE_GREEN;
-    //     Serial.println("Blue-green gradient selected.");
-    //     delay(200); // Debounce delay
-    // }
+  }
+  sendValues(c,d);
+  if (digitalRead(BUTTON_REGULAR_PIN) == LOW) {
+       currentPattern = REGULAR;
+       //Serial.println("Regular gradient selected.");
+       delay(100); // Debounce delay
+   }
 
-    // // Check if the red-yellow pattern button is pressed
-    // if (digitalRead(BUTTON_RED_YELLOW_PIN) == LOW) {
-    //     currentPattern = RED_YELLOW;
-    //     Serial.println("Red-yellow gradient selected.");
-    //     delay(200); // Debounce delay
-    // }
+  // Check if the blue-green pattern button is pressed
+  if (digitalRead(BUTTON_BLUE_GREEN_PIN) == LOW) {
+        currentPattern = BLUE_GREEN;
+        //Serial.println("Blue-green gradient selected.");
+        delay(100); // Debounce delay
+  }
+
+  // Check if the red-yellow pattern button is pressed
+  if (digitalRead(BUTTON_RED_YELLOW_PIN) == LOW) {
+        currentPattern = RED_YELLOW;
+        //Serial.println("Red-yellow gradient selected.");
+        delay(100); // Debounce delay
+  }
+
+   if (digitalRead(BUTTON_COOL_SCHEME_PIN) == LOW) {
+        currentPattern = BUTTON_COOL_SCHEME_PIN;
+        //Serial.println("Red-yellow gradient selected.");
+        delay(100); // Debounce delay
+    }
+
+  
+
   sensor=c;
   sensor_2=d;
+  sensor_3=n;
   sensor = (int)(sensor);
   sensor_2=(int)(sensor_2);
-  Serial.print(F("Foot 1 output val: "));
-  Serial.println(sensor);
-   Serial.print(F("Foot 2output val: "));
-  Serial.println(sensor_2);
+  sensor_3=(int)(sensor_3);
+ // Serial.print(F("Foot 1 output val: "));
+ // Serial.println(sensor);
+  // Serial.print(F("Foot 2output val: "));
+  //Serial.println(sensor_2);
   //Display LEDs/OLED according to sensor value
   switch (currentPattern) {
         case REGULAR:
             
             processSensorData((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor - MIN_SENSOR) + MIN_LEDS),leds1);
             processSensorData((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor_2 - MIN_SENSOR) + MIN_LEDS),leds2);
+            processSensorData((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor_3 - MIN_SENSOR) + MIN_LEDS),leds3);
             break;
         case BLUE_GREEN:
             processSensorDataBlueGreen((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor - MIN_SENSOR) + MIN_LEDS),leds1);
-            
+            processSensorDataBlueGreen((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor_2 - MIN_SENSOR) + MIN_LEDS),leds2);
+            processSensorDataBlueGreen((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor_3 - MIN_SENSOR) + MIN_LEDS),leds3);
             break;
         case RED_YELLOW:
             processSensorDataRedYellow((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor - MIN_SENSOR) + MIN_LEDS),leds1);
+            processSensorDataRedYellow((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor_2 - MIN_SENSOR) + MIN_LEDS),leds2);
+            processSensorDataRedYellow((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor_3 - MIN_SENSOR) + MIN_LEDS),leds3);
+            break;
+        case COOL_SCHEME:
+            processSensorDataCool((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor - MIN_SENSOR) + MIN_LEDS),leds1);
+            processSensorDataCool((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor_2 - MIN_SENSOR) + MIN_LEDS),leds2);
+            processSensorDataCool((((NUM_LEDS - MIN_LEDS) / (MAX_SENSOR - MIN_SENSOR)) * (sensor_3 - MIN_SENSOR) + MIN_LEDS),leds3);
             break;
     }
   sensor = 0;
@@ -266,6 +296,26 @@ void processSensorDataRedYellow(int number_leds_on, CRGB * leds) {
     FastLED.show();
 }
 
+void processSensorDataCool(int number_leds_on, CRGB * leds) {
+    for (int i = 0; i < NUM_LEDS; i++) { // for each LED in the strip
+        if (i < number_leds_on) { // if our current LED should be ON
+            if ((i + 1) <= (NUM_LEDS * 0.25)) { // bottom 25%, color TEAL
+                leds[i] = CRGB(0, 128, 128);
+            } else if ((i + 1) <= (NUM_LEDS * 0.50)) { // next 25%, color BLUE
+                leds[i] = CRGB(0, 0, 255);
+            } else if ((i + 1) <= (NUM_LEDS * 0.75)) { // next 25%, color PURPLE
+                leds[i] = CRGB(128, 0, 128);
+            } else { // top 25%, color LIGHT BLUE
+                leds[i] = CRGB(173, 216, 230);
+            }
+        } else { // outside of range of ON LEDs, turn off
+            leds[i] = CRGB(0, 0, 0);
+        }
+    }
+    FastLED.show();
+}
+
+
 float load_cell_data(float c){
 static boolean newDataReady = 0;
   const int serialPrintInterval = 0; //increase value to slow down serial print activity
@@ -274,21 +324,13 @@ static boolean newDataReady = 0;
   if (LoadCell_1.update()) newDataReady = true;
   LoadCell_2.update();
 
-  //get smoothed value from data set
-  //if ((newDataReady)) {
-    //if (millis() > t + serialPrintInterval) {
+  
       
       c = (LoadCell_2.getData()+LoadCell_1.getData())/2;
-      // Serial.print(F("Load_cell 1 output val: "));
-      // Serial.println(LoadCell_2.getData());
-      // Serial.println(F("    Load_cell 2 output val: "));
-      // Serial.println(LoadCell_1.getData());
-      // Serial.println(F("    Load_cell Average output val: "));
-      // Serial.println(c);
+      
       newDataReady = 0;
       t = millis();
-    //}
-  //}
+    
 
   // receive command from serial terminal, send 't' to initiate tare operation:
   if (Serial.available() > 0) {
@@ -299,13 +341,7 @@ static boolean newDataReady = 0;
     }
   }
 
-  //check if last tare operation is complete
-  if (LoadCell_1.getTareStatus() == true) {
-    Serial.println("Tare load cell 1 complete");
-  }
-  if (LoadCell_2.getTareStatus() == true) {
-    Serial.println("Tare load cell 2 complete");
-  }
+ 
   return c;
 }
 float load_cell_data_2(float d){
@@ -316,21 +352,13 @@ static boolean newDataReady = 0;
   if (LoadCell_3.update()) newDataReady = true;
   LoadCell_4.update();
 
-  //get smoothed value from data set
-  //if ((newDataReady)) {
-    //if (millis() > t + serialPrintInterval) {
+  
       
       d = (LoadCell_3.getData()+LoadCell_4.getData())/2;
-      // Serial.print(F("Load_cell 1 output val: "));
-      // Serial.println(LoadCell_2.getData());
-      // Serial.println(F("    Load_cell 2 output val: "));
-      // Serial.println(LoadCell_1.getData());
-      // Serial.println(F("    Load_cell Average output val: "));
-      // Serial.println(c);
+     
       newDataReady = 0;
       t = millis();
-    //}
-  //}
+   
 
   // receive command from serial terminal, send 't' to initiate tare operation:
   if (Serial.available() > 0) {
@@ -341,12 +369,20 @@ static boolean newDataReady = 0;
     }
   }
 
-  //check if last tare operation is complete
-  if (LoadCell_3.getTareStatus() == true) {
-    Serial.println("Tare load cell 1 complete");
-  }
-  if (LoadCell_4.getTareStatus() == true) {
-    Serial.println("Tare load cell 2 complete");
-  }
   return d;
+}
+void sendValues(float forceL, float forceR) {
+    forceL=(0.001* 9.98*forceL);
+    forceR=(.001* 9.98*forceR);
+    // Send Left Value
+    Serial.print("S"); // Identifier for Left
+    Serial.print(",");
+    Serial.print(forceL); // Send the float value
+    Serial.print("\n"); // End the transmission for Left
+
+    // Send Right Value
+    Serial.print(""); // Identifier for Right
+    Serial.print(",");
+    Serial.print(forceR); // Send the float value
+    Serial.print("\n"); // End the transmission for Right
 }
