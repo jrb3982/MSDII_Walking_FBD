@@ -10,7 +10,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 void setup() {
   Serial.begin(115200);
-
+  Serial.println("HELLP");
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
     Serial.println(F("SSD1306 allocation failed"));
     for(;;);
@@ -18,11 +18,16 @@ void setup() {
   delay(2000);
   display.clearDisplay();
 
-  display.setTextSize(1);
+  display.setTextSize(2);
   display.setTextColor(WHITE);
   display.setCursor(0, 10);
   // Display static text
-  display.println("Sensor Value:");
+  display.print("RA:");
+  display.print(16.25);
+  display.println("N");
+  display.print("LA:");
+  display.print(3.25);
+  display.println("N");
   display.display(); 
 }
 
