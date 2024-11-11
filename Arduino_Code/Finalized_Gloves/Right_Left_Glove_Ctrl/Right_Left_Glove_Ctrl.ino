@@ -67,27 +67,27 @@ void loop() {
   if (digitalRead(BUTTON_REGULAR_PIN) == LOW) {
     currentPattern = REGULAR;
     Serial.println("Regular gradient selected.");
-    delay(200);  // Debounce delay
+    delay(50);  // Debounce delay
   }
 
   // Check if the blue-green pattern button is pressed
   if (digitalRead(BUTTON_BLUE_GREEN_PIN) == LOW) {
     currentPattern = BLUE_GREEN;
     Serial.println("Blue-green gradient selected.");
-    delay(200);  // Debounce delay
+    delay(50);  // Debounce delay
   }
 
   // // Check if the red-yellow pattern button is pressed
   if (digitalRead(BUTTON_RED_YELLOW_PIN) == LOW) {
     currentPattern = RED_YELLOW;
     Serial.println("Red-yellow gradient selected.");
-    delay(200);  // Debounce delay
+    delay(50);  // Debounce delay
   }
 
   if (digitalRead(BUTTON_COOL_SCHEME_PIN) == LOW) {
     currentPattern = COOL_SCHEME;
     Serial.println("Cool gradient selected.");
-    delay(200);  // Debounce delay
+    delay(50);  // Debounce delay
   }
   for (int i = 0; i < 10; i++) {
     multiplexOut(i);
@@ -145,6 +145,10 @@ void loop() {
   //sendFloatAsBytes(forceSum2);
   //Serial.println("N");
   sendValues(forceSum1, forceSum2);
+  if (Serial.available()) {
+    String data = Serial.readStringUntil('\r');  // Read until newline
+    Serial.print(data);                          // Parse the received data
+  }
   delay(5);
   // Display LEDs according to sensor value with the selected gradient
   if (sensorSum1 >= MAX_SENSOR_FOR_LEDS) {
