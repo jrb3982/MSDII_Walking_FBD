@@ -58,7 +58,6 @@ void setup() {
     forceLUT[i] = (float)determineForce(i);
   }
 }
-
 void loop() {
   int getSmooth = 0;
   int temp1, flex1, temp2, flex2;
